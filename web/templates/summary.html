@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Job Summary</h1>
+<p>Please enter your Job ID to view the summary.</p>
+
+<div class="summary-section">
+  <!-- 搜尋區 -->
+  <div class="search-box">
+    <input type="text" id="jobIdInput" placeholder="Please enter your Job ID">
+    <button id="searchBtn">Search</button>
+  </div>
+
+  <!-- 提示訊息 -->
+  <p id="searchMessage" class="message"></p>
+
+  <!-- 結果顯示區 -->
+  <div class="metrics-container">
+    <div class="metrics-box">
+      <h3>External Metrics</h3>
+      <p>ARI: <span id="ariValue">—</span></p>
+      <p>NMI: <span id="nmiValue">—</span></p>
+    </div>
+
+    <div class="metrics-box">
+      <h3>Internal Metrics</h3>
+      <p>CH: <span id="chValue">—</span></p>
+      <p>DB: <span id="dbValue">—</span></p>
+    </div>
+  </div>
+
+  <!-- leaf number -->
+  <div class="leaf-section">
+    <p>Leaf Number: <span id="leafValue">—</span></p>
+  </div>
+</div>
+
+<script>
+document.getElementById("searchBtn").addEventListener("click", async function() {
+  const jobId = document.getElementById("jobIdInput").value.trim();
+  const message = document.getElementById("searchMessage");
+
+  if (!jobId) {
+    message.textContent = "Please enter a Job ID.";
+    message.style.color = "red";
+    return;
+  }
+
+  // 清空舊資料
+  ["ariValue","nmiValue","chValue","dbValue","leafValue"].forEach(id => {
+    document.getElementById(id).textContent = "—";
+  });
+
+  // 發送請求
+  const response = await fetch(`/api/job/${jobId}`);
+  const data = await response.json();
+
+  if (data.found) {
+    message.textContent = "✅ Job found!";
+    message.style.color = "green";
+    document.getElementById("ariValue").textContent = data.metrics.ARI;
+    document.getElementById("nmiValue").textContent = data.metrics.NMI;
+    document.getElementById("chValue").textContent = data.metrics.CH;
+    document.getElementById("dbValue").textContent = data.metrics.DB;
+    document.getElementById("leafValue").textContent = data.metrics.Leaf;
+  } else {
+    message.textContent = "❌ Cannot find your Job ID.";
+    message.style.color = "red";
+  }
+});
+</script>
+{% endblock %}
+

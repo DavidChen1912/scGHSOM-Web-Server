@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Cluster Feature Map</h1>
+<p>Enter your Job ID to view the generated feature map.</p>
+
+<div class="feature-section">
+  <!-- 搜尋區 -->
+  <div class="search-box">
+    <input type="text" id="jobIdInput" placeholder="Please enter your Job ID">
+    <button id="searchBtn">Search</button>
+  </div>
+
+  <!-- 訊息 -->
+  <p id="searchMessage" class="message"></p>
+
+  <!-- 結果展示區（暫時留白） -->
+  <div id="featureResult" class="feature-result">
+    <p class="placeholder-text">Your feature map will appear here once loaded.</p>
+  </div>
+</div>
+
+<script>
+document.getElementById("searchBtn").addEventListener("click", async function() {
+  const jobId = document.getElementById("jobIdInput").value.trim();
+  const message = document.getElementById("searchMessage");
+  const resultDiv = document.getElementById("featureResult");
+
+  if (!jobId) {
+    message.textContent = "Please enter a Job ID.";
+    message.style.color = "red";
+    return;
+  }
+
+  message.textContent = "Searching...";
+  message.style.color = "gray";
+  resultDiv.innerHTML = "";
+
+  const response = await fetch(`/api/feature/${jobId}`);
+  const data = await response.json();
+
+  if (data.found) {
+    message.textContent = "✅ Feature map loaded successfully!";
+    message.style.color = "green";
+
+    // 插入圖片
+    const img = document.createElement("img");
+    img.src = data.image_url;
+    img.alt = "Feature Map";
+    img.classList.add("feature-img");
+    resultDiv.appendChild(img);
+
+  } else {
+    message.textContent = "❌ Cannot find your Job ID.";
+    message.style.color = "red";
+    resultDiv.innerHTML = "<p class='placeholder-text'>No feature map found.</p>";
+  }
+});
+</script>
+{% endblock %}
+

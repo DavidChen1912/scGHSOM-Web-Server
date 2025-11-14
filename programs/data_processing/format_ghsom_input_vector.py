@@ -1,73 +1,98 @@
 import pandas as pd
 import csv
 import numpy as np
-# import argparse
 
-# parser = argparse.ArgumentParser(description='manual to this script')
-# parser.add_argument('--name', type=str, default = None)
-# parser.add_argument('--index', type=str, default = None)
-# parser.add_argument('--train_column', type=str, default = None)
-# args = parser.parse_args()
+def format_ghsom_input_vector(name, file, index, label, subnum):
+    """
+    name : dataset name (string)
+    file : application folder name (data-t1-t2)
+    index : user-provided index column (string or None)
+    label : user-provided label column (string or None)
+    subnum : subsample number (int or None)
+    """
 
-def format_ghsom_input_vector(name, file, index, subnum):
-    #source_path = name.replace('-item-seq','')
     print(subnum)
-    dataf = pd.read_csv('./raw-data/%s.csv' % name, encoding='utf-8')
-    #label_df = pd.read_csv('./raw-data/label/%s_label.csv' % name, encoding='utf-8')
 
-    df = pd.DataFrame(dataf)
-    #if train_column
-    df = dataf.fillna(0)
-    #df['type'] = label_df['type']
-    #sub samples
-    if subnum != None:
+    # ============================
+    # 讀 raw-data（新版）
+    # ============================
+    df = pd.read_csv(f'./raw-data/{name}.csv', encoding='utf-8')
+
+    # ============================
+    # 補 NA → 0（保持舊版邏輯）
+    # ============================
+    df = df.fillna(0)
+
+    # ============================
+    # Subsample（舊版一致）
+    # ============================
+    if subnum is not None:
         df = df.sample(n=subnum)
 
+    # ============================
+    # 處理 index（使用者有填才 drop）
+    # ============================
+    if index is not None and index in df.columns:
+        print(f"[INFO] Dropping index column: {index}")
+        df = df.drop(columns=[index])
 
-    #lb = label_df[(label_df['ID'] == df['ID'])]
-    #all as train_column
-    #lb = df['type']
-    df = df.drop(index,axis=1)
+    # ============================
+    # 處理 label（使用者有填才 drop）
+    # ============================
+    if label is not None and label in df.columns:
+        print(f"[INFO] Dropping label column: {label}")
+        df = df.drop(columns=[label])
 
-    # data shape
-    print('rows=',df.shape[0])
-    print('columns=',df.shape[1])
-
-    #save labels
+    # ============================
+    # printing info（舊版格式）
+    # ============================
     rows_amount = df.shape[0]
     columns_amount = df.shape[1]
     df[index] = range(0,rows_amount)
-    
-    #if subsample
-    #lb.to_csv('./applications/%s/data/%s_label.csv' % (name,name),index=False) #subsam#df = df.drop(columns=['type'])
-    #df.to_csv('./applications/%s/data/%s_raw.csv' % (name,name),index=False) 
-    df.to_csv('./applications/%s/GHSOM/data/%s_ghsom.csv' % (file, name), sep=' ',index=False, header=False)
 
-    # set ghsom input data format
-    # format information : http://www.ifs.tuwien.ac.at/~andi/somlib/download/SOMLib_Datafiles.html#input_vectors
+    print('rows=', rows_amount)
+    print('columns=', columns_amount)
+
+    # ============================
+    # 寫出 GHSOM input CSV（完全照舊版）
+    # ============================
+    ghsom_csv_path = f'./applications/{file}/GHSOM/data/{name}_ghsom.csv'
+    df.to_csv(ghsom_csv_path, sep=' ', index=False, header=False)
+
+    # ============================
+    # 寫出 .in 檔（完全照舊版）
+    # ============================
+    ghsom_in_path = f'./applications/{file}/GHSOM/data/{name}_ghsom.in'
+
     data_type = 'inputvec'
     x_dim = rows_amount
     y_dim = 1
     vec_dim = columns_amount
 
-    with open('./applications/%s/GHSOM/data/%s_ghsom.in' % (file, name), 'w', newline='',encoding='utf-8') as csvfile:
-        # 建立 CSV 檔寫入器 , 設定空白切割
+    with open(ghsom_in_path, 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
 
-        # Parameter settings
-        writer.writerow(['$TYPE %s' % data_type])
-        writer.writerow(['$XDIM %s' % x_dim])
-        writer.writerow(['$YDIM %s' % y_dim])
-        writer.writerow(['$VECDIM %s' % vec_dim])
-        
-        # Data settings
-        with open('./applications/%s/GHSOM/data/%s_ghsom.csv' % (file, name),'r', newline='',encoding='utf-8') as rawfile:
-            # 讀取 CSV 檔案內容
+        writer.writerow([f'$TYPE {data_type}'])
+        writer.writerow([f'$XDIM {x_dim}'])
+        writer.writerow([f'$YDIM {y_dim}'])
+        writer.writerow([f'$VECDIM {vec_dim}'])
+
+        with open(ghsom_csv_path, 'r', newline='', encoding='utf-8') as rawfile:
             rows = csv.reader(rawfile)
             writer.writerow([])
-        
-            # 以迴圈輸出每一列
+
             for row in rows:
-                #print(row)
                 writer.writerow(row)
-        rawfile.close()
+        
+
+    print("[OK] GHSOM input formatting completed (final version).")
+
+
+
+
+
+
+
+
+
+

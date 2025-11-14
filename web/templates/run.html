@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Run Analysis</h1>
+<p>Please upload your dataset and set the parameters below.</p>
+
+<div class="upload-section">
+  <form id="analysis-form" action="/submit" method="post" enctype="multipart/form-data">
+    <div class="upload-container">
+
+      <!-- 左邊：上傳檔案 -->
+      <div class="upload-left">
+        <label class="upload-label">Click here to upload your file</label>
+        <input type="file" name="file" accept=".csv" required>
+      </div>
+
+      <!-- 右邊：參數設定 -->
+      <div class="upload-right">
+        <p style="font-style: italic; color: #444; margin-top: 0;">
+          Tau₁ and Tau₂ should be values between 0 and 1.
+        </p>
+
+        <label for="tau1">Set Tau₁:</label>
+        <input type="number" id="tau1" name="tau1" step="0.01" min="0" max="1" value="{{ tau1 or 0.5 }}" required><br>
+
+        <label for="tau2">Set Tau₂:</label>
+        <input type="number" id="tau2" name="tau2" step="0.01" min="0" max="1" value="{{ tau2 or 0.7 }}" required><br>
+
+        <label for="index">Set Index (optional):</label>
+        <input type="text" id="index" name="index" placeholder="Enter column index"><br>
+
+        <label for="label">Label column (optional):</label>
+        <input type="text" id="label" name="label" placeholder="e.g., cell_type">
+      </div>
+    </div>
+
+    <!-- Gmail 區塊 -->
+    <div class="email-section">
+      <label for="gmail">Your Gmail address (optional):</label>
+      <input type="email" id="gmail" name="gmail" placeholder="you@gmail.com" value="{{ gmail or '' }}">
+    </div>
+
+    <!-- 按鈕區 -->
+    <div class="submit-section">
+      <button type="submit" class="submit-btn">Submit</button>
+      <button type="reset" class="submit-btn" style="background-color: #ccc; color: #333; margin-left: 10px;">Reset</button>
+    </div>
+  </form>
+</div>
+
+<!-- Job ID 顯示區 -->
+{% if message %}
+  <div class="jobid-section">
+    <p class="jobid-text">{{ message }}</p>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+
+

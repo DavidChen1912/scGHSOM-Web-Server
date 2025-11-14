@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>scGHSOM — {{ title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="logo">scGHSOM</div>
+      <ul class="nav-links">
+        <li><a href="{{ url_for('home') }}">Home</a></li>
+        <li><a href="{{ url_for('run_analysis') }}">Run Analysis</a></li>
+
+        <!-- Dropdown -->
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">Database ▼</a>
+          <ul class="dropdown-content">
+            <li><a href="{{ url_for('summary') }}">Job Summary</a></li>
+            <li><a href="{{ url_for('feature_map') }}">Cluster Feature Map</a></li>
+            <li><a href="{{ url_for('distribution_map') }}">Cluster Distribution Map</a></li>
+          </ul>
+        </li>
+
+        <li><a href="{{ url_for('tutorial') }}">Tutorial</a></li>
+        <li><a href="{{ url_for('reference') }}">Reference</a></li>
+        <li><a href="{{ url_for('contact') }}">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- 👇 控制 Database 下拉行為的 JavaScript -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const dropdown = document.querySelector('.dropdown');
+      const toggle = document.querySelector('.dropdown-toggle');
+      const menu = document.querySelector('.dropdown-content');
+
+      // 點 Database 展開 / 收合
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        menu.classList.toggle('show');
+      });
+
+      // 點空白處關閉
+      document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target)) {
+          menu.classList.remove('show');
+        }
+      });
+
+      // 點子項關閉
+      menu.querySelectorAll('a').forEach(item => {
+        item.addEventListener('click', () => menu.classList.remove('show'));
+      });
+    });
+  </script>
+</body>
+</html>
+
+
+

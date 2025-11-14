@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Cluster Distribution Map</h1>
+<p>Enter your Job ID to view the distribution map result.</p>
+
+<div class="distribution-section">
+  <!-- 搜尋區 -->
+  <div class="search-box">
+    <input type="text" id="jobIdInput" placeholder="Please enter your Job ID">
+    <button id="searchBtn">Search</button>
+  </div>
+
+  <!-- 訊息 -->
+  <p id="searchMessage" class="message"></p>
+
+  <!-- 結果展示區 -->
+  <div id="distributionResult" class="distribution-result">
+    <p class="placeholder-text">Your distribution map will appear here once loaded.</p>
+  </div>
+</div>
+
+<script>
+document.getElementById("searchBtn").addEventListener("click", async function() {
+  const jobId = document.getElementById("jobIdInput").value.trim();
+  const message = document.getElementById("searchMessage");
+  const resultDiv = document.getElementById("distributionResult");
+
+  if (!jobId) {
+    message.textContent = "Please enter a Job ID.";
+    message.style.color = "red";
+    return;
+  }
+
+  message.textContent = "Searching...";
+  message.style.color = "gray";
+  resultDiv.innerHTML = "";
+
+  const response = await fetch(`/api/distribution/${jobId}`);
+  const data = await response.json();
+
+  if (data.found) {
+    message.textContent = "✅ Distribution map loaded successfully!";
+    message.style.color = "green";
+
+    // 插入圖片
+    const img = document.createElement("img");
+    img.src = data.image_url;
+    img.alt = "Distribution Map";
+    img.classList.add("distribution-img");
+    resultDiv.appendChild(img);
+
+  } else {
+    message.textContent = "❌ Cannot find your Job ID.";
+    message.style.color = "red";
+    resultDiv.innerHTML = "<p class='placeholder-text'>No distribution map found.</p>";
+  }
+});
+</script>
+{% endblock %}
+
