@@ -1,28 +1,45 @@
 import os
+import sys
 import uuid
 import json
 import csv
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect
 
+# ==========================================================
+# ⭐ 確保 Python 找得到 scGHSOM 專案根目錄
+# ==========================================================
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+from programs.Visualize.cluster_feature_map import init_feature_map_dash
+
+
+# ==========================================================
+# Flask 初始化
+# ==========================================================
 app = Flask(__name__)
 
-# -------------------------
-# Directory paths
-# -------------------------
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+BASE_DIR = ROOT_DIR
 RAW_DATA_DIR = os.path.join(BASE_DIR, "raw-data")
 QUEUE_DIR = os.path.join(BASE_DIR, "web", "queue")
 RESULT_DIR = os.path.join(BASE_DIR, "Result")
+APPLICATION_DIR = os.path.join(BASE_DIR, "applications")
 
 os.makedirs(RAW_DATA_DIR, exist_ok=True)
 os.makedirs(QUEUE_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
 
 
-# -------------------------
-# 首頁與主要頁面
-# -------------------------
+# ==========================================================
+# ⭐ 初始化 Dash（僅建立一次）
+# ==========================================================
+dash_app = init_feature_map_dash(app)
+
+
+# ==========================================================
+# Flask 頁面
+# ==========================================================
 @app.route('/')
 def home():
     return render_template('home.html', title='Home')
@@ -33,9 +50,39 @@ def run_analysis():
     return render_template('run.html', title='Run Analysis')
 
 
-# -------------------------
+@app.route('/database/summary')
+def summary():
+    return render_template('summary.html', title='Job Summary')
+
+
+@app.route('/database/feature-map')
+def feature_map():
+    return render_template('feature_map.html', title='Cluster Feature Map')
+
+
+@app.route('/database/distribution-map')
+def distribution_map():
+    return render_template('distribution_map.html', title='Distribution Map')
+
+
+@app.route('/tutorial')
+def tutorial():
+    return render_template('tutorial.html', title='Tutorial')
+
+
+@app.route('/reference')
+def reference():
+    return render_template('reference.html', title='Reference')
+
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html', title='Contact')
+
+
+# ==========================================================
 # 提交分析表單
-# -------------------------
+# ==========================================================
 @app.route('/submit', methods=['POST'])
 def submit():
     file = request.files.get('file')
@@ -47,12 +94,12 @@ def submit():
 
     job_id = f"scGHSOM_{uuid.uuid4().hex[:8]}"
 
-    # 存 raw-data
+    # 儲存 raw-data
     if file:
         raw_path = os.path.join(RAW_DATA_DIR, f"{job_id}.csv")
         file.save(raw_path)
 
-    # 寫 queue JSON
+    # 儲存到 queue
     job_info = {
         "job_id": job_id,
         "tau1": float(tau1),
@@ -78,44 +125,8 @@ def submit():
     )
 
 
-# -------------------------
-# Database 子頁面
-# -------------------------
-@app.route('/database/summary')
-def summary():
-    return render_template('summary.html', title='Job Summary')
-
-
-@app.route('/database/feature-map')
-def feature_map():
-    return render_template('feature_map.html', title='Cluster Feature Map')
-
-
-@app.route('/database/distribution-map')
-def distribution_map():
-    return render_template('distribution_map.html', title='Cluster Distribution Map')
-
-
-# -------------------------
-# 其他靜態頁面
-# -------------------------
-@app.route('/tutorial')
-def tutorial():
-    return render_template('tutorial.html', title='Tutorial')
-
-
-@app.route('/reference')
-def reference():
-    return render_template('reference.html', title='Reference')
-
-
-@app.route('/contact')
-def contact():
-    return render_template('contact.html', title='Contact')
-
-
 # ==========================================================
-# ★★★ Job Summary API（返回 NA / 數值皆可）
+# Job Summary API
 # ==========================================================
 @app.route('/api/job/<job_id>')
 def get_job_summary(job_id):
@@ -131,7 +142,6 @@ def get_job_summary(job_id):
             reader = csv.DictReader(f)
             row = next(reader)
 
-            # 直接回傳字串，不轉型，不會爆掉
             result = {
                 "found": True,
                 "metrics": {
@@ -145,46 +155,58 @@ def get_job_summary(job_id):
 
         return jsonify(result)
 
-    except Exception as e:
-        print("[ERROR reading result csv]", e)
+    except:
         return jsonify({"found": False})
 
 
-# -------------------------
-# Feature Map API（暫時 placeholder）
-# -------------------------
+# ==========================================================
+# ⭐ Feature Map API — 回傳 Dash URL
+# ==========================================================
 @app.route('/api/feature/<job_id>')
-def get_feature_map(job_id):
-    job_id_lower = job_id.lower()
-    if job_id_lower == "example":
-        return jsonify({
-            "found": True,
-            "image_url": "https://via.placeholder.com/800x400?text=Feature+Map+Preview"
-        })
-    else:
+def api_feature_map(job_id):
+
+    folders = [
+        f for f in os.listdir(APPLICATION_DIR)
+        if f.startswith(job_id + "-")
+    ]
+
+    if not folders:
         return jsonify({"found": False})
 
-
-# -------------------------
-# Distribution Map API
-# -------------------------
-@app.route('/api/distribution/<job_id>')
-def get_distribution_map(job_id):
-    job_id_lower = job_id.lower()
-    if job_id_lower == "example":
-        return jsonify({
-            "found": True,
-            "image_url": "https://via.placeholder.com/800x400?text=Distribution+Map+Preview"
-        })
-    else:
-        return jsonify({"found": False})
+    return jsonify({
+        "found": True,
+        "dash_url": f"/feature-map/{job_id}"
+    })
 
 
-# -------------------------
-# 主程式
-# -------------------------
+# ==========================================================
+# ⭐ 不要有任何 /feature-map/<job_id> 的 Flask route!!!
+# Dash 會處理所有 /feature-map/* 路由
+# ==========================================================
+
+
+# ==========================================================
+# 主程序
+# ==========================================================
 if __name__ == '__main__':
+    print("[FLASK] Starting Web Server ...")
     app.run(debug=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
