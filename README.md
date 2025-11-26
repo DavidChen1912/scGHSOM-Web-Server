@@ -6,10 +6,22 @@ This work is being prepared for submission to the **Nucleic Acids Research (NAR)
 
 ---
 
-## 🔧 Project Status
+## 🌐 Live Demo (Development Deployment)
 
-This repository currently contains the **local deployment version** of the web server. It does **not** include cloud deployment or production hosting pipelines.
+A development version of the **scGHSOM Web Server** is currently online:
 
-Once the official online server is deployed, the link will be added here.
+👉 **[Click here to access the server](http://34.72.153.46/)**
+
+This deployment is intended for early testing and internal review. A stable domain name and HTTPS setup will be provided upon final deployment.
+
+---
+
+## 🔧 Repository Status
+
+This repository represents the **local deployment version** of the scGHSOM Web Server and is intended to demonstrate the core architecture of the platform.
+
+Please note that this repository is **no longer actively updated**, and it does **not** include recent cloud deployment improvements or production-level configurations.
+
+All ongoing development, optimization, and deployment updates are maintained in a separate internal repository.
 
 ---
