@@ -13,6 +13,10 @@
         <label class="upload-label">Click here to upload your file</label>
         <input type="file" id="fileInput" name="file" accept=".csv">
 
+        <p style="margin-top: 6px; color:#666; font-size:14px;">
+          Maximum upload size: <strong>300 MB</strong>
+        </p>
+
         <!-- ⭐ Load Example -->
         <button id="loadExampleBtn" type="button"
                 style="margin-top: 12px; width: 100%; padding: 12px;
@@ -152,11 +156,23 @@ document.getElementById("previewModal").onclick = (e) => {
 
 /* ----------------------------- 上傳啟用按鈕 ----------------------------- */
 fileInput.addEventListener("change", () => {
-    if (fileInput.files.length > 0) {
-        previewBtn.disabled = false;
-        downloadBtn.disabled = false;
+    const file = fileInput.files[0];
+    const MAX_SIZE = 300 * 1024 * 1024;  // 300 MB
+
+    if (!file) return;
+
+    // 檔案太大 → 直接阻止 + 清空欄位 + 跳警告
+    if (file.size > MAX_SIZE) {
+        alert("❌ File too large! Maximum allowed size is 300 MB.");
+        fileInput.value = "";  // 清空上傳欄位（重設）
+        return;
     }
+
+    // 正常情況（檔案 OK） → 保持你原本的行為
+    previewBtn.disabled = false;
+    downloadBtn.disabled = false;
 });
+
 
 /* ----------------------------- Preview ----------------------------- */
 previewBtn.onclick = () => {

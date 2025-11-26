@@ -20,6 +20,7 @@ from programs.Visualize.cluster_distribution_map import cluster_distribution_map
 # Flask Init
 # ==========================================================
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # 300 MB limit
 
 BASE_DIR = ROOT_DIR
 RAW_DATA_DIR = os.path.join(BASE_DIR, "raw-data")
@@ -294,7 +295,7 @@ def distribution_map_result(job_id):
 # ==========================================================
 if __name__ == '__main__':
     print("[FLASK] Starting Web Server ...")
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
 
 
 
