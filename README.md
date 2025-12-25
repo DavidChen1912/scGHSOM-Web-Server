@@ -10,9 +10,7 @@ This work is being prepared for submission to the **Nucleic Acids Research (NAR)
 
 A development version of the **scGHSOM Web Server** is currently online:
 
-👉 **[Click here to access the server](http://34.72.153.46/)**
-
-This deployment is intended for early testing and internal review. A stable domain name and HTTPS setup will be provided upon final deployment.
+👉 **[Click here to access the server](https://scghsom.changlabtw.com/)**
 
 ---
 

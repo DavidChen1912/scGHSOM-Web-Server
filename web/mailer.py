@@ -14,16 +14,24 @@ def send_done_mail(user_email, job_id):
 
     subject = f"[scGHSOM] Job {job_id} Completed"
 
+    result_url = f"https://scghsom.changlabtw.com/results?job_id={job_id}"
+
     body = f"""
 Hello,<br><br>
 
-<b>Your scGHSOM analysis is now complete.</b><br><br>
+Your scGHSOM analysis has been completed.<br><br>
 
-<b>Job ID:</b> {job_id}<br><br>
+Job ID: {job_id}<br><br>
 
-You may now visit the Results page on our website and enter your Job ID to view all outputs.<br><br>
+You can view the results at the following link:<br>
+<a href="{result_url}">{result_url}</a><br><br>
 
-Thank you for using our service.<br>
+Please note that results are deleted at 00:00 UTC every Monday.<br><br>
+
+Thank you for using the scGHSOM web server.<br>
+If you have any questions or encounter any issues, please feel free to contact us.<br><br>
+
+Best regards,<br>
 scGHSOM Web Server Team
 """
 

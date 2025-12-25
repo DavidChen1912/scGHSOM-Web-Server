@@ -27,10 +27,12 @@ RAW_DATA_DIR = os.path.join(BASE_DIR, "raw-data")
 QUEUE_DIR = os.path.join(BASE_DIR, "web", "queue")
 RESULT_DIR = os.path.join(BASE_DIR, "Result")
 APPLICATION_DIR = os.path.join(BASE_DIR, "applications")
+JOB_META_DIR = os.path.join(BASE_DIR, "web", "job_meta")
 
 os.makedirs(RAW_DATA_DIR, exist_ok=True)
 os.makedirs(QUEUE_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
+os.makedirs(JOB_META_DIR, exist_ok=True)
 
 # ==========================================================
 # ⭐ Dash Init (one-time)
@@ -64,6 +66,13 @@ def results_example():
 def tutorial():
     return render_template('tutorial.html', title='Tutorial')
 
+@app.route('/tutorial/explain')
+def tutorial_explain():
+    return render_template(
+        'tutorial_explain.html',
+        title='Tutorial Interpret Results'
+    )
+
 
 @app.route('/reference')
 def reference():
@@ -75,7 +84,9 @@ def contact():
     return render_template('contact.html', title='Contact')
 
 
-# ⭐ Provide example.csv to frontend (for preview)
+# ==========================================================
+# Example for preview
+# ==========================================================
 @app.route('/fetch-example')
 def fetch_example():
     example_path = os.path.join(RAW_DATA_DIR, "example.csv")
@@ -84,84 +95,132 @@ def fetch_example():
     return send_file(example_path, mimetype="text/csv")
 
 
-# ==========================================================
-# ⭐ Submit form
-# ==========================================================
-@app.route('/submit', methods=['POST'])
-def submit():
-    file = request.files.get('file')
-    tau1 = request.form.get('tau1')
-    tau2 = request.form.get('tau2')
-    index = request.form.get('index') or None
-    label = request.form.get('label') or None
-    gmail = request.form.get('gmail') or None
-    example_flag = request.form.get("example_flag")
+# ======================================================================
+# ⭐ Register Job
+# ======================================================================
+@app.route('/api/register-job', methods=['POST'])
+def api_register_job():
+    try:
+        data = request.form or request.json or {}
 
-    job_id = f"scGHSOM_{uuid.uuid4().hex[:8]}"
+        tau1 = data.get('tau1')
+        tau2 = data.get('tau2')
+        index = data.get('index') or None
+        label = data.get('label') or None
+        gmail = data.get('gmail') or None
+        example_flag = data.get('example_flag', 'false')
 
-    # ================================
-    # ⭐ Example mode
-    # ================================
-    if example_flag == "true":
+        if tau1 is None or tau2 is None:
+            return jsonify({"success": False, "error": "tau1 and tau2 are required."}), 400
+
+        job_id = f"scGHSOM_{uuid.uuid4().hex[:8]}"
+
+        job_meta = {
+            "job_id": job_id,
+            "tau1": float(tau1),
+            "tau2": float(tau2),
+            "index": index,
+            "label": label,
+            "gmail": gmail,
+            "example_flag": str(example_flag).lower() == "true"
+        }
+
+        meta_path = os.path.join(JOB_META_DIR, f"{job_id}.json")
+        with open(meta_path, "w") as f:
+            json.dump(job_meta, f, indent=4)
+
+        print(f"[JOB REGISTERED] {job_meta}")
+
+        return jsonify({"success": True, "job_id": job_id})
+
+    except Exception as e:
+        print(f"[API ERROR] /api/register-job failed: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ======================================================================
+# ⭐ Upload CSV → Create Queue JSON
+# ======================================================================
+@app.route('/api/upload/<job_id>', methods=['POST'])
+def api_upload_file(job_id):
+
+    meta_path = os.path.join(JOB_META_DIR, f"{job_id}.json")
+    if not os.path.exists(meta_path):
+        return jsonify({"success": False, "error": "Job metadata not found."}), 404
+
+    try:
+        with open(meta_path, "r") as f:
+            job_meta = json.load(f)
+
+        example_flag = job_meta.get("example_flag", False)
+
+        # ======================
+        # Example mode
+        # ======================
         raw_path = os.path.join(RAW_DATA_DIR, f"{job_id}.csv")
-        example_path = os.path.join(RAW_DATA_DIR, "example.csv")
 
-        if not os.path.exists(example_path):
-            return render_template(
-                "run.html",
-                title="Run Analysis",
-                message="[ERROR] example.csv not found in raw-data/"
-            )
+        if example_flag:
+            example_path = os.path.join(RAW_DATA_DIR, "example.csv")
 
-        with open(example_path, "rb") as src, open(raw_path, "wb") as dst:
-            dst.write(src.read())
+            if not os.path.exists(example_path):
+                return jsonify({"success": False, "error": "example.csv missing"}), 500
 
-    # ================================
-    # ⭐ User upload
-    # ================================
-    else:
-        if file:
-            raw_path = os.path.join(RAW_DATA_DIR, f"{job_id}.csv")
-            file.save(raw_path)
+            # Fast path: just copy
+            with open(example_path, "rb") as src, open(raw_path, "wb") as dst:
+                dst.write(src.read())
 
-    # Save queue info
-    job_info = {
-        "job_id": job_id,
-        "tau1": float(tau1),
-        "tau2": float(tau2),
-        "index": index,
-        "label": label,
-        "gmail": gmail
-    }
+            print(f"[EXAMPLE COPIED] {example_path} → {raw_path}")
 
-    queue_path = os.path.join(QUEUE_DIR, f"{job_id}.json")
-    with open(queue_path, "w") as f:
-        json.dump(job_info, f, indent=4)
+        else:
+            # ======================
+            # Normal upload mode
+            # ======================
+            file = request.files.get('file')
+            if not file:
+                return jsonify({"success": False, "error": "No file uploaded."}), 400
 
-    print(f"[NEW JOB CREATED] {job_info}")
+            try:
+                file.save(raw_path)
+            except Exception as e:
+                print(f"[UPLOAD ERROR] Failed to save file: {e}")
+                return jsonify({"success": False, "error": "Failed to save file"}), 500
 
-    # ======================================================
-    # ⭐ Final success message (no preview/download line)
-    # ======================================================
-    message = Markup(
-        f"Upload successful! Your Job ID: {job_id}<br>"
-        f"Your analysis may take some time. Please wait patiently.<br>"
-        f'You can also explore the official example result here: '
-        f'<a href="/results/example" target="_blank">Results → Example</a>'
-    )
+            print(f"[FILE SAVED] {raw_path}")
 
-    return render_template(
-        'run.html',
-        title='Run Analysis',
-        message=message,
-        tau1=tau1,
-        tau2=tau2,
-        gmail=gmail
-    )
+        # ======================
+        # Create queue JSON
+        # ======================
+        job_info = {
+            "job_id": job_id,
+            "tau1": job_meta["tau1"],
+            "tau2": job_meta["tau2"],
+            "index": job_meta.get("index"),
+            "label": job_meta.get("label"),
+            "gmail": job_meta.get("gmail")
+        }
+
+        queue_path = os.path.join(QUEUE_DIR, f"{job_id}.json")
+        with open(queue_path, "w") as f:
+            json.dump(job_info, f, indent=4)
+
+        print(f"[NEW JOB QUEUED] {job_info}")
+
+        # Cleanup metadata
+        try:
+            os.remove(meta_path)
+        except:
+            pass
+
+        # 🟢 重要：越快回傳越好（Phase 1 完成）
+        return jsonify({"success": True})
+
+    except Exception as e:
+        print(f"[API ERROR] /api/upload/{job_id} failed: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ==========================================================
-# ⭐ Preview (first 100 rows)
+# Preview CSV
 # ==========================================================
 @app.route('/preview/<job_id>')
 def preview_file(job_id):
@@ -191,7 +250,7 @@ def preview_file(job_id):
 
 
 # ==========================================================
-# ⭐ Download raw file
+# Download raw CSV
 # ==========================================================
 @app.route('/download/<job_id>')
 def download_file(job_id):
@@ -204,7 +263,7 @@ def download_file(job_id):
 
 
 # ==========================================================
-# Job Summary API
+# Job Summary (result CSV)
 # ==========================================================
 @app.route('/api/job/<job_id>')
 def get_job_summary(job_id):
@@ -233,12 +292,12 @@ def get_job_summary(job_id):
 
         return jsonify(result)
 
-    except:
+    except Exception:
         return jsonify({"found": False})
 
 
 # ==========================================================
-# ⭐ Feature Map API
+# Feature Map API
 # ==========================================================
 @app.route('/api/feature/<job_id>')
 def api_feature_map(job_id):
@@ -258,7 +317,7 @@ def api_feature_map(job_id):
 
 
 # ==========================================================
-# ⭐ Distribution Map
+# Distribution Map
 # ==========================================================
 @app.route('/distribution-map/<job_id>')
 def distribution_map_result(job_id):
@@ -296,6 +355,17 @@ def distribution_map_result(job_id):
 if __name__ == '__main__':
     print("[FLASK] Starting Web Server ...")
     app.run(host="0.0.0.0", port=5000)
+
+
+
+
+
+
+
+
+
+
+
 
 
 

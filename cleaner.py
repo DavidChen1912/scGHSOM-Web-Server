@@ -1,4 +1,4 @@
-# 每七天負責定情清理 applications raw-data result label四個資料夾，example檔案永久不刪除
+# 每七天負責定情清理 applications job_meta result label四個資料夾，example檔案永久不刪除
 import os
 import shutil
 
@@ -7,7 +7,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TARGET_DIRS = [
     os.path.join(BASE_DIR, "applications"),
     os.path.join(BASE_DIR, "Result"),
-    os.path.join(BASE_DIR, "raw-data"),
+    os.path.join(BASE_DIR, "web", "job_meta"),
     os.path.join(BASE_DIR, "label")
 ]
 

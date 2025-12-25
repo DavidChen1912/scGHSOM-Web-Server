@@ -14,41 +14,49 @@ def format_ghsom_input_vector(name, file, index, label, subnum):
     print(subnum)
 
     # ============================
-    # 讀 raw-data（新版）
+    # 讀 raw-data
     # ============================
     df = pd.read_csv(f'./raw-data/{name}.csv', encoding='utf-8')
 
     # ============================
-    # 補 NA → 0（保持舊版邏輯）
+    # 1️⃣ Drop index / label columns if provided
+    #    （避免 metadata 進入 GHSOM input）
+    # ============================
+    drop_cols = []
+    if index is not None and index in df.columns:
+        print(f"[INFO] Dropping index column: {index}")
+        drop_cols.append(index)
+
+    if label is not None and label in df.columns:
+        print(f"[INFO] Dropping label column: {label}")
+        drop_cols.append(label)
+
+    df = df.drop(columns=drop_cols, errors='ignore')
+
+    # ============================
+    # 2️⃣ Keep numeric columns only
+    #    （GHSOM 僅接受數值型向量）
+    # ============================
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    df = df[numeric_cols]
+
+    # ============================
+    # 3️⃣ Fill NA → 0（保持舊版邏輯）
     # ============================
     df = df.fillna(0)
 
     # ============================
-    # Subsample（舊版一致）
+    # 4️⃣ Subsample（舊版一致，training-time option）
     # ============================
     if subnum is not None:
         df = df.sample(n=subnum)
 
     # ============================
-    # 處理 index（使用者有填才 drop）
-    # ============================
-    if index is not None and index in df.columns:
-        print(f"[INFO] Dropping index column: {index}")
-        df = df.drop(columns=[index])
-
-    # ============================
-    # 處理 label（使用者有填才 drop）
-    # ============================
-    if label is not None and label in df.columns:
-        print(f"[INFO] Dropping label column: {label}")
-        df = df.drop(columns=[label])
-
-    # ============================
-    # printing info（舊版格式）
+    # printing info（舊版格式，完全保留）
     # ============================
     rows_amount = df.shape[0]
     columns_amount = df.shape[1]
-    df[index] = range(0,rows_amount)
+    df[index] = range(0, rows_amount)
 
     print('rows=', rows_amount)
     print('columns=', columns_amount)
@@ -83,9 +91,9 @@ def format_ghsom_input_vector(name, file, index, label, subnum):
 
             for row in rows:
                 writer.writerow(row)
-        
 
     print("[OK] GHSOM input formatting completed (final version).")
+
 
 
 

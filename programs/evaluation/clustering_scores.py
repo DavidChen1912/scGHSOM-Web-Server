@@ -53,6 +53,11 @@ if label_col is not None and label_col in df_raw.columns:
 
 sample = df_raw.drop(columns=exclude_cols, errors='ignore')
 
+# ============================
+# 第二道保險：只保留數值欄位
+# ============================
+sample = sample.select_dtypes(include=[np.number])
+
 # ========================================
 # 計算 Leaf Number
 # ========================================
@@ -65,7 +70,12 @@ if label_col is None or label_col not in df_raw.columns:
     ARI = "NA"
     NMI = "NA"
 else:
-    true_label = df_raw[label_col].fillna(-1)
+    true_label = df_raw[label_col]
+    if pd.api.types.is_numeric_dtype(true_label):
+        true_label = true_label.fillna(-1)
+    else:
+        true_label = true_label.fillna("Unknown")
+
 
     if len(true_label) != len(cluster_label):
         raise ValueError("Label length does not match clustering result.")

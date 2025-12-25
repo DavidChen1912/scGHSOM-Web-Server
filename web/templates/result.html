@@ -4,6 +4,13 @@
 <h1>Results</h1>
 <p>Please enter your Job ID to view all results.</p>
 
+<p class="result-guide-entry">
+  ❓
+  <a href="/tutorial/explain" target="_blank">
+    Not sure how to interpret your results? Click here to open a detailed explanation.
+  </a>
+</p>
+
 <!-- ======================= Job Summary Section ======================= -->
 <div class="summary-section">
 
@@ -33,14 +40,14 @@
     <div class="metrics-container">
       <div class="metrics-box">
         <h3>External Metrics</h3>
-        <p>ARI: <span id="ariValue">—</span></p>
-        <p>NMI: <span id="nmiValue">—</span></p>
+        <p>ARI (↑) : <span id="ariValue">—</span></p>
+        <p>NMI (↑) : <span id="nmiValue">—</span></p>
       </div>
 
       <div class="metrics-box">
         <h3>Internal Metrics</h3>
-        <p>CH: <span id="chValue">—</span></p>
-        <p>DB: <span id="dbValue">—</span></p>
+        <p>CH (↑) : <span id="chValue">—</span></p>
+        <p>DB (↓) : <span id="dbValue">—</span></p>
       </div>
     </div>
 
@@ -136,19 +143,34 @@ document.getElementById("searchBtn").addEventListener("click", async function ()
 </script>
 
 <!-- =========================== -->
-<!-- ⭐ AUTO QUERY — 無 VSCode 錯誤版本 -->
+<!-- ⭐ AUTO QUERY（新版，不需要 auto=1） -->
 <!-- =========================== -->
-{% if auto_query %}
 <script>
 window.addEventListener("DOMContentLoaded", function () {
-    const presetJobId = "{{ job_id }}";
+
+    const presetJobId = "{{ job_id }}";  // 後端模板可能預先填入
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlJobId = urlParams.get("job_id");
+
+    let finalJobId = null;
+
+    // 1) 後端模板指定的 job_id（例如 example）
     if (presetJobId) {
-        document.getElementById("jobIdInput").value = presetJobId;
-        runSearch(presetJobId);
+        finalJobId = presetJobId;
+    }
+    // 2) URL 上的 job_id（例如 run.js redirect or bookmark）
+    else if (urlJobId) {
+        finalJobId = urlJobId;
+    }
+
+    // 如果有 job_id → 自動查詢
+    if (finalJobId) {
+        document.getElementById("jobIdInput").value = finalJobId;
+        runSearch(finalJobId);
     }
 });
 </script>
-{% endif %}
+
 
 {% endblock %}
 
