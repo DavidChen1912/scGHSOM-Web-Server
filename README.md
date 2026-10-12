@@ -8,9 +8,11 @@ This work is being prepared for submission to the **Nucleic Acids Research (NAR)
 
 ## 🌐 Live Demo (Development Deployment)
 
-A development version of the **scGHSOM Web Server** is currently online:
+⚠️ Update — October 12, 2026
 
-👉 **[Click here to access the server](https://scghsom.changlabtw.com/)**
+The scGHSOM Web Server has been **temporarily taken offline to minimize hosting costs.** The server will be brought back online following the editorial decision on our submission to the Nucleic Acids Research (NAR) Web Server Issue.
+
+We appreciate your understanding.
 
 ---
 
